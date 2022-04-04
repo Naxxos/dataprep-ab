@@ -1,0 +1,12 @@
+*.xml
+*.XML
+*.csv
+.env
+.venv
+*.pyc
+M71_2020/
+M71_2020_csv/
+schema/
+.vscode
+.ipynb*
+__pycache__/
