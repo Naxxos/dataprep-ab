@@ -1,9 +1,10 @@
-from typing import List, Optional
-from sqlmodel import Field, SQLModel, Relationship
+from typing import List, Optional, Dict
+from sqlmodel import Field, SQLModel, Relationship, JSON, Column
 
 
 class Collectivite(SQLModel, table=True):
-    id: str = Field(primary_key=True)
+    id: Optional[str] = Field(default=None, primary_key=True)
+    siret_coll: str 
     libelle_collectivite: str
     nature_collectivite: str
     departement: Optional[str]
@@ -13,9 +14,33 @@ class Collectivite(SQLModel, table=True):
 
 class DocumentBudgetaire(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    id_etablissement: int
-    fk_id_collectivite: str = Field(foreign_key="collectivite.id")
+    siret_etablissement: str
+    libelle: str
+    code_insee: Optional[str]
+    nomenclature: str
+    exercice: int
+    nature_dec: str #Enum à l'avenir
+    num_dec: Optional[int]
+    nature_vote: str #Enum
+    type_budget: str #Enum
+    id_etabl_princ: Optional[str]
+
+    fk_id_collectivite: str = Field(foreign_key="collectivite.id") 
+    json_budget: Optional[dict] = Field(sa_column=Column(JSON))
+    json_annexes: Optional[dict] = Field(sa_column=Column(JSON))
+
     collectivite: Collectivite = Relationship(back_populates="documentsBudgetaires")
+    annexes: List["Annexe"] = Relationship(back_populates="documentsBudgetaires")
+
+
+class Annexe(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    fk_id_document_budgetaire: int = Field(foreign_key="documentbudgetaire.id")
+    type_annexe: Optional[str]
+    json_annexe: Optional[dict] = Field(sa_column=Column(JSON))
+    
+    document_budgetaire: DocumentBudgetaire = Relationship(back_populates="annexe")
+
 
 
 """
@@ -27,22 +52,20 @@ libellé Colloc 	LibelleColl  ---- libelle_collectivite
 type de collectivité 	NatCEPL ---- nature_collectivite
 département 	Departement ---- departement
 
-
 ### EnTeteBudget
-libellé budget 	LibelleEtab
-SIRET budget 	IdEtab
-Code INSEE 	CodInseeColl
-nomenclature 	Nomenclature
-
+libellé budget 	LibelleEtab --- libelle
+SIRET budget 	IdEtab --- siret_etablissement
+Code INSEE 	CodInseeColl --- code_insee
+nomenclature 	Nomenclature --- nomenclature
 
 
 ### BlocBudget
-exercice 	Exer
-type de document budgétaire 	NatDec
-numéro de DM  	NumDec
-nature de vote 	NatFonc
-budget principal/annexe 	CodTypBud
-SIRET BP 	IdEtabPal
+exercice 	Exer --- exercice
+type de document budgétaire 	NatDec ----
+numéro de DM  	NumDec  -----
+nature de vote 	NatFonc ----
+budget principal/annexe 	CodTypBud ----
+SIRET BP 	IdEtabPal ---
 
 
 class Annexe(Base):
