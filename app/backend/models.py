@@ -1,46 +1,49 @@
 from typing import List, Optional, Dict
-from sqlmodel import Field, SQLModel, Relationship, JSON, Column
+from sqlmodel import Field, SQLModel, Relationship, JSON, Column, String
 
 
 class Collectivite(SQLModel, table=True):
-    id: Optional[str] = Field(default=None, primary_key=True)
-    siret_coll: str 
+    siret_coll: str = Field(sa_column=Column(String(14), primary_key=True))
     libelle_collectivite: str
     nature_collectivite: str
     departement: Optional[str]
 
-    documentsBudgetaires: List["DocumentBudgetaire"] = Relationship(back_populates="collectivite")
+    documents_budgetaires: List["DocumentBudgetaire"] = Relationship(
+        back_populates="collectivite")
 
 
 class DocumentBudgetaire(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    siret_etablissement: str
+    siret_etablissement: str = Field(
+        sa_column=Column(String(14), primary_key=True))
     libelle: str
     code_insee: Optional[str]
     nomenclature: str
     exercice: int
-    nature_dec: str #Enum à l'avenir
+    nature_dec: str  # Enum à l'avenir
     num_dec: Optional[int]
-    nature_vote: str #Enum
-    type_budget: str #Enum
+    nature_vote: str  # Enum
+    type_budget: str  # Enum
     id_etabl_princ: Optional[str]
 
-    fk_id_collectivite: str = Field(foreign_key="collectivite.id") 
     json_budget: Optional[dict] = Field(sa_column=Column(JSON))
     json_annexes: Optional[dict] = Field(sa_column=Column(JSON))
 
-    collectivite: Collectivite = Relationship(back_populates="documentsBudgetaires")
-    annexes: List["Annexe"] = Relationship(back_populates="documentsBudgetaires")
+    fk_siret_collectivite: str = Field(foreign_key="collectivite.siret_coll")
+    collectivite: Collectivite = Relationship(
+        back_populates="documents_budgetaires")
+    annexes: List["Annexe"] = Relationship(
+        back_populates="document_budgetaire")
 
 
 class Annexe(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    fk_id_document_budgetaire: int = Field(foreign_key="documentbudgetaire.id")
+
     type_annexe: Optional[str]
     json_annexe: Optional[dict] = Field(sa_column=Column(JSON))
-    
-    document_budgetaire: DocumentBudgetaire = Relationship(back_populates="annexe")
 
+    fk_siret_document_budgetaire: str = Field(foreign_key="documentbudgetaire.siret_etablissement")
+    document_budgetaire: DocumentBudgetaire = Relationship(
+        back_populates="annexes")
 
 
 """

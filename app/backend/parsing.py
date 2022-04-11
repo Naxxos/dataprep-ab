@@ -16,30 +16,32 @@ def create_dict_from_xml(chemin_fichier: Path):
 
 def parsing_infos_collectivite(dict_from_xml: dict):
     infos_dict = dict()
-    infos_dict["siret_coll"] = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]["IdColl"]["@V"]
-    infos_dict["libelle_collectivite"] = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]["LibelleColl"]["@V"]
-    infos_dict["nature_collectivite"] = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]["NatCEPL"]["@V"]
-    if "Departement" in dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]:
-        infos_dict["departement"] = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]["Departement"]["@V"]
+    dict_entete_doc = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]
+    infos_dict["siret_coll"] = dict_entete_doc["IdColl"]["@V"]
+    infos_dict["libelle_collectivite"] = dict_entete_doc["LibelleColl"]["@V"]
+    infos_dict["nature_collectivite"] = dict_entete_doc["NatCEPL"]["@V"]
+    infos_dict["departement"] = dict_entete_doc.get("Departement", {}).get("@V", None)
 
     return infos_dict
 
 def parsing_infos_etablissement(dict_from_xml: dict):
     infos_dict = dict()
-    infos_dict["siret_etablissement"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["EnTeteBudget"]["IdEtab"]["@V"]
-    infos_dict["libelle"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["EnTeteBudget"]["LibelleEtab"]["@V"]
-    if "LibelleEtab" in dict_from_xml["DocumentBudgetaire"]["Budget"]["EnTeteBudget"]:
-        infos_dict["code_insee"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["EnTeteBudget"]["LibelleEtab"]["@V"]
-    infos_dict["nomenclature"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["EnTeteBudget"]["Nomenclature"]["@V"]
-    infos_dict["exercice"] = int(dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]["Exer"]["@V"])
-    infos_dict["nature_dec"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]["NatDec"]["@V"]
-    if "NumDec" in dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]:
-        infos_dict["NumDec"] = int(dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]["NumDec"]["@V"])
-    infos_dict["nature_vote"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]["NatFonc"]["@V"]
-    infos_dict["type_budget"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]["CodTypBud"]["@V"]
-    if "IdEtabPal" in dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]:
-        infos_dict["id_etabl_princ"] = dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]["IdEtabPal"]["@V"]
-    infos_dict["fk_id_collectivite"] = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]["IdColl"]["@V"]
+    dict_entete_budget = dict_from_xml["DocumentBudgetaire"]["Budget"]["EnTeteBudget"]
+    dict_bloc_budget = dict_from_xml["DocumentBudgetaire"]["Budget"]["BlocBudget"]
+
+    infos_dict["siret_etablissement"] = dict_entete_budget["IdEtab"]["@V"]
+    infos_dict["libelle"] = dict_entete_budget["LibelleEtab"]["@V"]
+    infos_dict["code_insee"] = dict_entete_budget.get("LibelleEtab", {}).get("@V", None)
+    infos_dict["nomenclature"] = dict_entete_budget["Nomenclature"]["@V"]
+
+    infos_dict["exercice"] = int(dict_bloc_budget["Exer"]["@V"])
+    infos_dict["nature_dec"] = dict_bloc_budget["NatDec"]["@V"]
+    infos_dict["NumDec"] = int(dict_bloc_budget.get("NumDec", {}).get("@V", None) or 0)
+    infos_dict["nature_vote"] = dict_bloc_budget["NatFonc"]["@V"]
+    infos_dict["type_budget"] = dict_bloc_budget["CodTypBud"]["@V"]
+    infos_dict["id_etabl_princ"] = dict_bloc_budget.get("IdEtabPal", {}).get("@V", None)
+
+    infos_dict["fk_siret_collectivite"] = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]["IdColl"]["@V"]
     
     return infos_dict
 
