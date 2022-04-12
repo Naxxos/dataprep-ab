@@ -81,9 +81,10 @@ def generate_dict_annexe(dict_from_xml: dict, nom_annexe: str, liste_champs_anne
         annexe_dict, dict) else annexe_dict
     for idx, row in enumerate(annexe_dict):
         for field in liste_champs_annexe:
-            if field in row:
-                if "@V" in row[field]:
-                    annexe_dict[idx][field] = row[field]['@V']
+            if row:
+                if field in row:
+                    if "@V" in row[field]:
+                        annexe_dict[idx][field] = row[field]['@V']
     return annexe_dict
 
 def parsing_annexes(dict_from_xml: dict) -> dict:
