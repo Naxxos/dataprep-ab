@@ -2,66 +2,45 @@
 from sqlmodel import SQLModel,  Session, select
 from backend.database import engine, drop_and_create_db_and_tables
 from backend.models import Collectivite, DocumentBudgetaire, Annexe
-import backend.parsing, backend.config, backend.browse
+from backend.parsing import Parsing
+import backend.config, backend.browse
 from pathlib import Path
 
-def get_collectivite(siret):
-    with Session(engine) as session:
-        statement = select(Collectivite).where(Collectivite.siret_coll == siret)
-        results = session.exec(statement)
-        return results.first()
+from backend.timer import logger
 
-def insert_collectivite(dict_coll):
-    coll = Collectivite(**dict_coll)
-    if get_collectivite(coll.siret_coll):
-        print(f"\"{coll.libelle_collectivite}\" already in database")
-    else:
-        with Session(engine) as session:
-            session.add(coll)
-            session.commit()
-
-def insert_docbudg(dict_etablissement):
-    doc_budg = DocumentBudgetaire(**dict_etablissement)
-    with Session(engine) as session:
-            session.add(doc_budg)
-            session.commit()
-            return doc_budg.id
-
-def insert_annexe(list_Annexes: list[Annexe], doc_budg_id):
+def insert_annexes(list_Annexes, doc_budg_id):
     with Session(engine) as session:
         for annexe in list_Annexes:
             #doc_budg.annexes.append(annexe)
             session.add(annexe)
             session.commit()
 
-
-def insert_in_db(object_to_insert):
-    with Session(engine) as session:
-        session.add(object_to_insert)
-        session.commit()
-
-def insert_bulk_in_db(objects):
-    with Session(engine) as session:
-        session.bulk_save_objects(objects)
-        session.commit()
-
-
 def main():
     drop_and_create_db_and_tables()
     chemin_fichiers_xml = backend.browse.get_liste_fichiers_xml(Path(backend.config.SOURCE_FILES))
-    
-    for file in chemin_fichiers_xml:
-        dict_doc_budg = backend.parsing.create_dict_from_xml(file)
-        dict_infos_coll = backend.parsing.parsing_infos_collectivite(dict_doc_budg)
-        dict_infos_etab = backend.parsing.parsing_infos_etablissement(dict_doc_budg)
-        
-        insert_collectivite(dict_infos_coll)
-        doc_budg_id = insert_docbudg(dict_infos_etab)
+    n = 0
 
-        dict_annexes = backend.parsing.parsing_annexes(dict_doc_budg)
-        list_Annexes = backend.parsing.create_list_Annexe(dict_annexes, doc_budg_id)
-        #coll.documents_budgetaires.append(doc_budg)
-        insert_annexe(list_Annexes, doc_budg_id)
+    parsing = Parsing()
+    for file in chemin_fichiers_xml:
+        dict_doc_budg = parsing.create_dict_from_xml(file)
+        dict_infos_coll = parsing.parsing_infos_collectivite(dict_doc_budg)
+        dict_infos_etab = parsing.parsing_infos_etablissement(dict_doc_budg)
+        
+        collectivite = Collectivite(**dict_infos_coll)
+        collectivite.insert_collectivite()
+
+        doc_budg = DocumentBudgetaire(**dict_infos_etab)
+        doc_budg_id = doc_budg.insert_docbudg()
+        
+        #collectivite.documents_budgetaires.append(doc_budg)
+
+        dict_annexes = parsing.parsing_annexes(dict_doc_budg)
+        list_Annexes = parsing.create_list_Annexe(dict_annexes, doc_budg_id)
+        insert_annexes(list_Annexes, doc_budg_id)
+        n +=1
+        logger.debug(f"Fichier n°{n}")
+
+
 
         
     #get_collectivite("20005375900011")

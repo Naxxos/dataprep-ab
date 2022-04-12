@@ -1,5 +1,9 @@
 from typing import List, Optional, Dict
 from sqlmodel import Field, SQLModel, Relationship, JSON, ARRAY, Column, String
+from sqlmodel import Session, select
+from backend.database import engine
+from .timer import timed, logger
+
 
 
 class Collectivite(SQLModel, table=True):
@@ -11,15 +15,29 @@ class Collectivite(SQLModel, table=True):
     documents_budgetaires: List["DocumentBudgetaire"] = Relationship(
         back_populates="collectivite")
 
+    @timed
+    def insert_collectivite(self):
+        if self.get_collectivite(self.siret_coll):
+            logger.debug(f"\"{self.libelle_collectivite}\" already in database")
+        else:
+            with Session(engine) as session:
+                session.add(self)
+                session.commit()
+    
+    def get_collectivite(self, siret):
+        with Session(engine) as session:
+            statement = select(Collectivite).where(Collectivite.siret_coll == siret)
+            results = session.exec(statement)
+            return results.first()
 
 class DocumentBudgetaire(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    siret_etablissement: str = Field(sa_column=Column(String(14)))
+    siret_etablissement: str = Field(sa_column=Column(String(14)), index=True)
     libelle: str
     code_insee: Optional[str]
     nomenclature: str
-    exercice: int
+    exercice: int = Field(index=True)
     nature_dec: str  # Enum à l'avenir
     num_dec: Optional[int]
     nature_vote: str  # Enum
@@ -36,16 +54,26 @@ class DocumentBudgetaire(SQLModel, table=True):
     annexes: List["Annexe"] = Relationship(
         back_populates="document_budgetaire")
 
+    @timed
+    def insert_docbudg(self):
+        with Session(engine) as session:
+            session.add(self)
+            session.commit()
+            return self.id
+
+
+
 
 class Annexe(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    type_annexe: Optional[str]
+    type_annexe: Optional[str] = Field(index=True)
     json_annexe: Optional[str] #= Field(sa_column=Column(JSON))
 
     fk_id_document_budgetaire: int = Field(foreign_key="documentbudgetaire.id")
     document_budgetaire: DocumentBudgetaire = Relationship(
         back_populates="annexes")
+    
 
 
 """
@@ -72,43 +100,4 @@ nature de vote 	NatFonc ----
 budget principal/annexe 	CodTypBud ----
 SIRET BP 	IdEtabPal ---
 
-
-class Annexe(Base):
-    __tablename__ = "annexes"
-
-    id_annexe = Column(String, primary_key=True, nullable = False)
-    libelle = Column(String, nullable = False)
-    liste_champs = Column(String, nullable = False)
-    nom_fichier = Column(String, nullable = False)
-    chemin_xml = Column(String, nullable = False)
-    element_type = Column(String, nullable = False)
-
-
-class Champ(Base):
-    __tablename__ = "champs"
-
-    id_champ = Column(String, primary_key=True, nullable = False)
-    libelle = Column(String, nullable = False)
-    libelle_long = Column(String, nullable = False)
-    value_dict = Column(String, primary_key=True, nullable = False)
-
-
-
-- # annexes
-- idannexe (primary key)
-- codeChamp (primary key)
-- nom_fichier_xsd
-- nom_racine (surement deux éléments DATA_CONCOURS(1)/CONCOURS(*))
-- libChamp
-- descChamp
-
-content = Column(String, nullable = False)
-    is_published = Column(Boolean, server_default='True', nullable = True)
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, 
-        server_default=text('now()'))
-- # Code champ annexe
-- codeChamp (primary key)
-- value (primary key)
-- libellé
-- libellé long (libellé + description)
 """

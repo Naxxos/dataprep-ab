@@ -7,7 +7,7 @@ db_password = os.environ["PG_ROOT_PASSWORD"]
 
 DATABASE_URL = "postgresql://postgres:{}@localhost/actes_budgetaire".format(db_password)
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL)
 
 
 def create_db_and_tables():
