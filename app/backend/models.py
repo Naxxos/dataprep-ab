@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from sqlmodel import Field, SQLModel, Relationship, JSON, Column, String
+from sqlmodel import Field, SQLModel, Relationship, JSON, ARRAY, Column, String
 
 
 class Collectivite(SQLModel, table=True):
@@ -13,8 +13,9 @@ class Collectivite(SQLModel, table=True):
 
 
 class DocumentBudgetaire(SQLModel, table=True):
-    siret_etablissement: str = Field(
-        sa_column=Column(String(14), primary_key=True))
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    siret_etablissement: str = Field(sa_column=Column(String(14)))
     libelle: str
     code_insee: Optional[str]
     nomenclature: str
@@ -25,8 +26,9 @@ class DocumentBudgetaire(SQLModel, table=True):
     type_budget: str  # Enum
     id_etabl_princ: Optional[str]
 
-    json_budget: Optional[dict] = Field(sa_column=Column(JSON))
-    json_annexes: Optional[dict] = Field(sa_column=Column(JSON))
+    json_budget: Optional[str]# = Field(sa_column=Column(JSON))
+    list_annexes: Optional[list] = Field(sa_column=Column(ARRAY(String)))
+
 
     fk_siret_collectivite: str = Field(foreign_key="collectivite.siret_coll")
     collectivite: Collectivite = Relationship(
@@ -39,9 +41,9 @@ class Annexe(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
 
     type_annexe: Optional[str]
-    json_annexe: Optional[dict] = Field(sa_column=Column(JSON))
+    json_annexe: Optional[str] #= Field(sa_column=Column(JSON))
 
-    fk_siret_document_budgetaire: str = Field(foreign_key="documentbudgetaire.siret_etablissement")
+    fk_id_document_budgetaire: int = Field(foreign_key="documentbudgetaire.id")
     document_budgetaire: DocumentBudgetaire = Relationship(
         back_populates="annexes")
 
