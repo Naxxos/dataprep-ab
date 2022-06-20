@@ -10,3 +10,8 @@ schema/
 .vscode
 .ipynb*
 __pycache__/
+import_data/*
+*.7z
+*.csv
+*.zip
+*.ipynb

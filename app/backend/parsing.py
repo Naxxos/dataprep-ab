@@ -52,7 +52,8 @@ class Parsing():
             "IdEtabPal", {}).get("@V", None)
 
         infos_dict["json_budget"] = self.generate_dict_budget(dict_from_xml)
-        infos_dict["list_annexes"] = list(dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"].keys())
+        if isinstance(dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"], dict):
+            infos_dict["list_annexes"] = list(dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"].keys())
         
         infos_dict["fk_siret_collectivite"] = dict_from_xml["DocumentBudgetaire"]["EnTeteDocBudgetaire"]["IdColl"]["@V"]
 
@@ -65,7 +66,13 @@ class Parsing():
     def generate_dict_budget(self, dict_from_xml: dict) -> dict:
         budget_dict = copy.deepcopy(
             dict_from_xml["DocumentBudgetaire"]["Budget"]["LigneBudget"])
-
+        
+        if isinstance(budget_dict, dict):
+            for field in backend.config.CHAMPS_LIGNE_BUDGET:
+                if field in budget_dict:
+                    if "@V" in budget_dict[field]:
+                        budget_dict[field] = budget_dict[field]['@V']
+            return json.dumps([budget_dict])
         for idx, row in enumerate(budget_dict):
             for field in backend.config.CHAMPS_LIGNE_BUDGET:
                 if field in row:
@@ -74,11 +81,16 @@ class Parsing():
         #erreur s'il y a qu'une seule ligne de budget
         return json.dumps(budget_dict)
 
+
+
     def generate_dict_annexe(self, dict_from_xml: dict, nom_annexe: str, liste_champs_annexe: list) -> dict:
         annexe_dict = copy.deepcopy(dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"]
                                     [nom_annexe][nom_annexe.split("_", 1)[1]])
+        if annexe_dict == None:
+            return {}
         annexe_dict = [annexe_dict] if isinstance(
             annexe_dict, dict) else annexe_dict
+        # Cette étape précédente peut être évité en ajoutant force_list=('Annexes',) lors de l'utilis 
         for idx, row in enumerate(annexe_dict):
             for field in liste_champs_annexe:
                 if row:
@@ -88,10 +100,21 @@ class Parsing():
         return annexe_dict
 
     def parsing_annexes(self, dict_from_xml: dict) -> dict:
-        liste_annexe = dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"].keys()
         dict_annexes = dict()
-        for annexe in liste_annexe:
-            dict_annexes[annexe] = self.generate_dict_annexe(dict_from_xml, annexe, backend.config.CHAMPS_ANNEXES[annexe])
+        if isinstance(dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"], dict):
+            liste_annexe = list(dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"].keys())
+            if "FLUX_CROISES" in liste_annexe: 
+                liste_annexe.remove("FLUX_CROISES")
+                keys = dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"].keys()
+                logger.warning(f"\"{keys}\" ")
+                
+            if "DATA_MEMBRESASA" in liste_annexe: 
+                liste_annexe.remove("DATA_MEMBRESASA")
+                logger.warning(f"\"DATA_MEMBRESASA\" in annexe ")
+        
+            if liste_annexe:
+                for annexe in liste_annexe:
+                    dict_annexes[annexe] = self.generate_dict_annexe(dict_from_xml, annexe, backend.config.CHAMPS_ANNEXES[annexe])
 
         return dict_annexes
 
@@ -102,7 +125,7 @@ class Parsing():
         infos_dict["json_annexe"] = {}
         for annexe in  dict_annexe.keys():
             infos_dict["type_annexe"] = annexe
-            infos_dict["json_annexe"] = json.dumps(dict_temp[annexe])
+            infos_dict["json_annexe"] = json.dumps(dict_temp[annexe], ensure_ascii=False).encode('utf8')
             infos_dict["fk_id_document_budgetaire"] = id_doc
             annexes.append(Annexe(**infos_dict))
         

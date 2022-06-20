@@ -15,7 +15,6 @@ class Collectivite(SQLModel, table=True):
     documents_budgetaires: List["DocumentBudgetaire"] = Relationship(
         back_populates="collectivite")
 
-    @timed
     def insert_collectivite(self):
         if self.get_collectivite(self.siret_coll):
             logger.debug(f"\"{self.libelle_collectivite}\" already in database")
@@ -54,7 +53,6 @@ class DocumentBudgetaire(SQLModel, table=True):
     annexes: List["Annexe"] = Relationship(
         back_populates="document_budgetaire")
 
-    @timed
     def insert_docbudg(self):
         with Session(engine) as session:
             session.add(self)
