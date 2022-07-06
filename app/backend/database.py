@@ -5,7 +5,7 @@ import os
 
 db_password = os.environ["PG_ROOT_PASSWORD"]
 
-DATABASE_URL = "postgresql://postgres:{}@localhost/actes_budgetaire".format(db_password)
+DATABASE_URL = "postgresql://postgres:{}@ab-postgres/actes_budgetaire".format(db_password)
 
 engine = create_engine(DATABASE_URL)
 
