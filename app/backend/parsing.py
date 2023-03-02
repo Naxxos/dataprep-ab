@@ -87,6 +87,7 @@ class Parsing():
         annexe_dict = copy.deepcopy(dict_from_xml["DocumentBudgetaire"]["Budget"]["Annexes"]
                                     [nom_annexe][nom_annexe.split("_", 1)[1]])
         if annexe_dict == None:
+            # On peut renvoyer False ? Eviter de générer un csv vide 
             return {}
         annexe_dict = [annexe_dict] if isinstance(
             annexe_dict, dict) else annexe_dict

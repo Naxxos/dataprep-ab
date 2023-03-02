@@ -3,7 +3,7 @@ from sqlmodel import create_engine
 import os
 
 
-db_password = os.environ["PG_ROOT_PASSWORD"]
+db_password = "vGXGLqTY4EF7DCiozYoKlqRRUaC7ECd"
 
 DATABASE_URL = "postgresql://postgres:{}@localhost/actes_budgetaire".format(db_password)
 

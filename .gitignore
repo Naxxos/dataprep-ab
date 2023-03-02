@@ -14,4 +14,5 @@ import_data/*
 *.7z
 *.csv
 *.zip
-download/SchemaDocBudg/*
+download/**
+download/data_source/*
